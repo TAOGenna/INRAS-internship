@@ -1,2 +1,2 @@
 # INRAS-internship
-Some implementations that were used to compute ionograms
+Goal: retrieve the electron density profile from a given ionogram
