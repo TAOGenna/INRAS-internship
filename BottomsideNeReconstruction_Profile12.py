@@ -8,6 +8,7 @@ from scipy.interpolate import splrep, BSpline
 import numpy.polynomial.chebyshev as cheb
 import inspect
 import time
+import tkinter as tk  # or use pyautogui or wx
 
 RED     = "\033[31m"
 GREEN   = "\033[92m"
@@ -28,6 +29,16 @@ def trace(*args):
         name = var_names.get(var_id, '<unknown>')
         print(f"{name}:\n {arg}")
 
+# some configuration for the plots 
+root = tk.Tk()
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+root.destroy()
+
+# Convert screen dimensions from pixels to inches (assuming 100 dpi)
+dpi = 100  # This can vary depending on your display settings
+figsize = (screen_width / dpi, screen_height / dpi)
+
 # physical constants
 qe = constants.e
 e0 = constants.epsilon_0
@@ -40,9 +51,12 @@ def ne_to_fp2(ne): # Ne should be in units of cm-3
 def fp2_to_ne(fp2):
     return fp2*((2*pi)**2)*(e0*me)/(qe**2)
 
+# plasma_freq = np.array([ 0, 0.5, 1, 1.5,  2, 2.3, 2.566,  2.7, 2.8,   3, 3.4,   4, 4.5,   5, 5.5,   6, 6.5,   7, 7.5,   8, 8.5,   9, 9.5,  10, 10.5,  11, 11.5,  12, 12.5,  13, 13.2])
+# height      = np.array([79,  80, 83, 87, 94, 100, 107,  114, 125, 140, 155, 168, 174, 180, 185, 191, 196, 201, 206, 210, 215, 220, 224, 228,  233, 237,  241, 247,  254, 265,  275])
+
 plasma_freq = np.array([ 0, 0.5, 1, 1.5,  2, 2.3, 2.566,  2.7, 2.8,   3, 3.4,   4, 4.5,   5, 5.5,   6, 6.5,   7, 7.5,   8, 8.5,   9, 9.5,  10, 10.5,  11, 11.5,  12, 12.5,  13, 13.2])
 height      = np.array([79,  80, 83, 87, 94, 100, 107,  114, 125, 140, 155, 168, 174, 180, 185, 191, 196, 201, 206, 210, 215, 220, 224, 228,  233, 237,  241, 247,  254, 265,  275])
-
+highest_freq = plasma_freq[-1] # MHz
 
 plasma_freq *= 1e6 # to make it MHz
 height = height.astype(np.float64)
@@ -55,18 +69,20 @@ number_points_d_layer = 20
 
 fp_range = plasma_freq
 hh_range = height
-
+font_size = 16
 ######### experiment interpolating ############
 tck = splrep(fp_range, hh_range, s=0)
-xnew = np.arange(0,13.2,1/40)*1e6 # frequency in MHz
+xnew = np.arange(0,highest_freq,1/40)*1e6 # frequency in MHz
 ynew = BSpline(*tck)(xnew)
 def initial_plot_interpolate():
-    plt.title('PLASMA FREQUENCY PROFILE AFTER INTERPOLATION')
-    plt.xlabel('PLASMA FREQUENCY (MHZ)')
-    plt.ylabel('HEIGHT (KM)')
-    plt.plot(xnew, ynew, '-', label='s=0')
+    plt.title('Plasma Frequency vs Height | PROFILE AFTER INTERPOLATION',fontsize=font_size)
+    plt.xlabel('PLASMA FREQUENCY (MHZ)',fontsize=font_size)
+    plt.ylabel('HEIGHT (KM)',fontsize=font_size)
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
+    plt.plot(xnew/1e6, ynew/1e3, '-', label='s=0')
     plt.show()
-#initial_plot_interpolate()
+initial_plot_interpolate()
 ###############################################
 
 fp_range = xnew
@@ -80,20 +96,27 @@ hh_range = np.append(hh_to_add,hh_range)
 
 
 def initial_plot_fp():
-    plt.plot(fp_range, hh_range, 'o', color='black')
-    plt.title('Plasma frequency Fig12 Paper3 w/ more data points')
-    plt.xlabel('PLASMA FREQUENCY (MHZ)')
-    plt.ylabel('HEIGHT (KM)')
+    plt.plot(fp_range/1e6, hh_range/1e3, 'o', color='black')
+    plt.title('Plasma Frequency vs Height | w/ more data points',fontsize=font_size)
+    plt.xlabel('PLASMA FREQUENCY (MHZ)',fontsize=font_size)
+    plt.ylabel('HEIGHT (KM)',fontsize = font_size )
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
+    plt.xlim((0,14))
+    plt.ylim((0,440))
+    plt.savefig("Figure 10 Plasma Frequency vs Height.pdf", format="pdf")
     plt.show()
 
-#initial_plot_fp()
+initial_plot_fp()
 ne_range = fp2_to_ne(fp_range**2)#(fp_range**2)/80.6
 
 def initial_plot_ne():
-    plt.plot(ne_range, hh_range, 'o', color='black')
-    plt.xlabel('NE (CM-3)')
-    plt.ylabel('HEIGHT (KM)')
-    plt.title('Electron density profile Fig12 Paper3')
+    plt.plot(ne_range, hh_range/1e3, 'o', color='black')
+    plt.xlabel('NE (CM-3)',fontsize=font_size)
+    plt.ylabel('HEIGHT (KM)',fontsize=font_size)
+    plt.title('Electron density profile',fontsize=font_size)
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
     plt.show()
 
 initial_plot_ne()
@@ -146,9 +169,11 @@ def ionogram(h,Ne,range_f):
             hv = np.append(hv,integral)
     def print_ionogram():
         plt.plot(f,hv)
-        plt.title('IONOGRAM')
-        plt.xlabel('FREQUENCY (MHZ)')
-        plt.ylabel('HEIGHT (KM)')
+        plt.title('IONOGRAM',fontsize=font_size)
+        plt.xlabel('FREQUENCY (MHZ)',fontsize=font_size)
+        plt.ylabel('HEIGHT (KM)',fontsize=font_size)
+        plt.xticks(fontsize = font_size)
+        plt.yticks(fontsize = font_size)
         plt.show()
     #print_ionogram()
     return f, hv
@@ -157,6 +182,8 @@ def ionogram(h,Ne,range_f):
 #range_f = np.linspace(0.1,13.2,num=300)*1e6
 range_f = np.linspace(fp_range[0],fp_range[-1],num=500)
 f, hv = ionogram(h=hh_range,Ne=ne_range, range_f=range_f)
+print('highest altitude in ionogram ',hv[-1])
+print('highest altitud in Ne profile ',ne_range[-1])
 np.savetxt("f_values.csv", f, delimiter=",")
 eps = 1e-6
 #print("this is what comes out of function ionogram, check units: ",f)
@@ -238,12 +265,12 @@ definition of values from scaling
 """
 truncate = 8
 magnetic_angle = np.radians(0)
-fE = 3.10e6
+fE = 2.717e6 # DATA
 nE = fp2_to_ne(fE**2)
-yE = 1.335e5-7.94e4 #KM --- half thickness of the parabolic profile | put by hand
-zE = 1.351e5 #KM --- height of the E layer peak
+yE = 1.335e5-7.94e4 # DATA - KM --- half thickness of the parabolic profile | put by hand
+zE = 1.351e5  # DATA - KM --- height of the E layer peak
 fF = range_f[-1]   #MHZ --- critical frequency of the F layer
-fH = 1.4e6
+fH = 1.0e6
 index = np.argmax(f > fE)# ALWAYS make sure just take f>fE
 
 # data only considering F layer
@@ -252,33 +279,26 @@ freq_Flayer =  f[index:]
 
 start_time = time.time()
 
-#Sik = compute_Sik(f_prime=freq_Flayer,fE=fE,fF=fF,fH=gyrofrequency,I=truncate,theta=magnetic_angle)
 Sik = compute_Sik2(f_prime=freq_Flayer,fE=fE,fF=fF,fH=1e-6,I=truncate,theta=magnetic_angle)
-
-#max_value/=1e12
-#trace(max_value,max_frq,max_time)
-#print(f"{GREEN} printing Sik matrix {RESET}\n",Sik)
 
 end_time = time.time()
 elapsed_time = end_time - start_time
 print(f"Elapsed time for matrix S_ik: {elapsed_time} seconds")
 
-
-#exit()
 """
 compute Chebyshev coefficients A_i
 """
 # we are just interested in the F layer so we cut the data to get only 
 # F layer frequencies and ionogram heights 
 
-# is the difference really necesary tho? 
 Pk = hv_Flayer - delta_he_prime(fk=freq_Flayer,zE=zE,yE=yE,fE=fE)
-#other = delta_he_prime(fk=freq_Flayer,zE=zE,yE=yE,fE=fE)
-#lt.plot(freq_Flayer,hv_Flayer,color='blue')
-#trace(zE,yE)
-#plt.plot(freq_Flayer,other,color='red')
-#plt.show()
-
+##############
+plt.title('comparion before and after Pk-delta_h_e_prime')
+plt.plot(freq_Flayer/1e6,Pk/1e3,label='reduced')
+plt.plot(freq_Flayer/1e6,hv_Flayer/1e3,label='original')
+plt.legend()
+plt.show()
+##############
 def check():
     index = np.array([], dtype=int)
     for it,elem in enumerate(Pk):
@@ -290,11 +310,12 @@ Pk, Sik, freq_Flayer, index_list = check()
 
 chi = np.prod(Pk>0)
 if chi:
-    print('all elements are positive')
+    print(f'{GREEN}OK All Pk elements are positive{RESET}')
     #print('maximun distance between h and Delta h_E is', np.amax(np.abs(hv_Flayer[index_list]-delta_he_prime(fk=freq_Flayer,zE=zE,yE=yE,fE=fE))))
 else:
-    print('ERROR, there are elements which are negative')
+    print(f'{RED}ERROR, there are elements in Pk which are negative{RESET}')
 
+#print(Sik)
 Qij = np.dot(Sik,Sik.T)
 Qij = np.column_stack((Qij,np.zeros(Qij.shape[0])))
 Qij = np.vstack((Qij,np.ones(Qij.shape[1])))
@@ -313,34 +334,48 @@ print('A array elements: ',A)
 check if it reseambles the ionogram
 """
 def ionogram_reconstruction():
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
+    ax1.tick_params(labelsize=font_size)
+    ax2.tick_params(labelsize=font_size)
+    ax3.tick_params(labelsize=font_size)
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 5))
-    ax1.set_title("original ionogram")
-    ax1.set_xlabel("frequency [MHz]")
-    ax1.set_ylabel("range [Km]")
-    ax1.set_xlim(0,1.4e7)
-    ax1.set_ylim(0,480e3) # zoom in in relevant y range
-    ax1.plot(f,hv,label='F layer')
+    ax1.set_title("Original ionogram",fontsize=font_size)
+    ax1.set_xlabel("frequency [MHz]",fontsize=font_size)
+    ax1.set_ylabel("range [Km]",fontsize=font_size)
+    #ax1.set_xlim(0,1.4e7)
+    ax1.set_ylim(0,hv[-1]/1e3) # zoom in in relevant y range
+    ax1.plot(f/1e6,hv/1e3,label='F layer')
     ax1.legend()
 
     freq_Elayer = f[f < fE]
     P_elayer = delta_he(fk=freq_Elayer,zE=zE,yE=yE,fE=fE)
-    ax2.plot(freq_Elayer,P_elayer,label='E layer')
+    ax2.plot(freq_Elayer/1e6,P_elayer/1e3,label='E layer')
 
     P = delta_he_prime(fk=freq_Flayer,zE=zE,yE=yE,fE=fE) + np.transpose(Sik).dot(A)
-    ax2.set_title("reconstruction with chebyshev coefficients")
-    ax2.set_xlabel("frequency [MHz]")
-    ax2.set_ylabel("range [Km]")
-    ax2.set_xlim(0,1.4e7)
-    ax2.set_ylim(0,480e3) # zoom in in relevant y range
-    ax2.plot(freq_Flayer,P,label='F layer')
+    ax2.set_title("Reconstruction",fontsize=font_size)
+    ax2.set_xlabel("frequency [MHz]",fontsize=font_size)
+    ax2.set_ylabel("range [Km]",fontsize=font_size)
+    #ax2.set_xlim(0,1.4e7)
+    ax2.set_ylim(0,P[-1]/1e3) # zoom in in relevant y range
+    ax2.plot(freq_Flayer/1e6,P/1e3,label='F layer')
     ax2.legend()
 
-    ax3.plot(freq_Flayer,P       ,'o',label='reconstructed',color='red',alpha=0.5)
-    ax3.plot(freq_Elayer,P_elayer,'o',label='',color='red',alpha=0.5)
-    ax3.plot(f,hv,label='original',color='blue')
+    ax3.set_title('Superposition',fontsize=font_size)
+    ax3.plot(freq_Flayer/1e6,P/1e3       ,'o',label='reconstructed',color='red',alpha=0.5)
+    ax3.plot(freq_Elayer/1e6,P_elayer/1e3,'o',label='',color='red',alpha=0.5)
+    ax3.plot(f/1e6,hv/1e3,label='original',color='blue')
     ax3.legend()
+    plt.xticks(fontsize = font_size)
+    plt.yticks(fontsize = font_size)
 
+    # for ax in [ax1, ax2, ax3]:
+    #     ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True, nbins='auto'))
+    #     ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True, nbins='auto'))
+
+    plt.tight_layout()  # Automatically adjust subplot parameters to fit the figure area.
+    plt.subplots_adjust(wspace=0.4, hspace=0.6)  # Manually adjust horizontal and vertical spacing if needed.
+
+    plt.savefig("Figure 10 ionogram reconstruction.pdf",format="pdf")
     plt.show()
 
 
@@ -380,35 +415,57 @@ for value in values_f:
 
 answer_nepx  = fp2_to_ne(answer_frqx**2)
 
-def final_plot_ne():
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 5))
-    
-    ax1.set_xlim(0,2.5e12)
-    ax1.set_ylim(0,300000)
-    ax1.set_xlabel("Ne")
-    ax1.set_ylabel("range [Km]")
-    ax1.set_title('original electron density profile')
-    ax1.plot(ne_range, hh_range)
+def final_plot_fp():
+    plt.xlabel('PLASMA FREQUENCY (MHZ)',fontsize=font_size)
+    plt.ylabel('HEIGHT (KM)',fontsize=font_size)
+    z_fE  = np.linspace(zE-yE,zE,num=20)
+    ne_fE = [nE*(1-((z-zE)/yE)**2) for z in z_fE]
+    fp_fE = np.sqrt([ne_to_fp2(nes) for nes in ne_fE])
+    otx = np.append(fp_fE,answer_frqx)
+    oty = np.append(z_fE,answer_rngy)
+    plt.plot(otx/1e6,oty/1e3,label='reconstructed',color='magenta',linewidth=3.2,alpha=0.5)
+    plt.plot(fp_range/1e6,hh_range/1e3,label='orginal',color='blue')
+    plt.show()
 
-    ax2.set_xlim(0,2.5e12)
-    ax2.set_ylim(0,450000)
-    ax2.set_xlabel("Ne")
-    ax2.set_ylabel("range [Km]")
-    ax2.set_title('reconstruction of Ne with Chebyshev coefficients')
-    ax2.plot(answer_nepx,answer_rngy,'o',label='F layer',color='blue')
+def final_plot_ne():
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
+    ax1.tick_params(labelsize=font_size)
+    ax2.tick_params(labelsize=font_size)
+    ax3.tick_params(labelsize=font_size)
+
+    #ax1.set_xlim(0,2.5e12)
+    ax1.set_ylim(0,hh_range[-1]/1e3)
+    ax1.set_xlabel("Ne",fontsize=font_size)
+    ax1.set_ylabel("range [Km]",fontsize=font_size)
+    ax1.set_title('original profile',fontsize=font_size)
+    ax1.plot(ne_range, hh_range/1e3)
+
+    #ax2.set_xlim(0,2.5e12)
+    ax2.set_ylim(0,answer_rngy[-1]/1e3)
+    ax2.set_xlabel("Ne",fontsize=font_size)
+    ax2.set_ylabel("range [Km]",fontsize=font_size)
+    ax2.set_title('reconstruction',fontsize=font_size)
+    ax2.plot(answer_nepx,answer_rngy/1e3,'o',label='F layer',color='blue')
     # PLOT the fE layer contribution
     z_fE  = np.linspace(zE-yE,zE,num=20)
     ne_fE = [nE*(1-((z-zE)/yE)**2) for z in z_fE]
-    ax2.plot(ne_fE,z_fE,'o',label='E layer',color='red')
+    ax2.plot(ne_fE,z_fE/1e3,'o',label='E layer',color='red')
     ax2.legend()
 
-    ax3.set_xlim(0,2.5e12)
-    ax3.set_ylim(0,450000)
-    ax3.plot(ne_range, hh_range,color='blue',label='original')
-    ax3.plot(answer_nepx,answer_rngy,color='red',label='reconstructed')
-    ax3.plot(ne_fE,z_fE,color='red')
+    #ax3.set_xlim(0,2.5e12)
+    ax3.set_title('Superposition')
+    ax3.set_ylim(0,answer_rngy[-1]/1e3)
+    ax3.plot(ne_range, hh_range/1e3,color='blue',label='original')
+    otx = np.append(ne_fE,answer_nepx)
+    oty = np.append(z_fE,answer_rngy)
+    ax3.plot(otx,oty/1e3,color='magenta',label='reconstructed',linewidth=3.2,alpha=0.5)
+    #ax3.plot(ne_fE,z_fE,color='red')
     ax3.legend()
 
+    plt.tight_layout()  # Automatically adjust subplot parameters to fit the figure area.
+    plt.subplots_adjust(wspace=0.4, hspace=0.6)  # Manually adjust horizontal and vertical spacing if needed.
+    plt.savefig("figure 10 Ne reconstruction.pdf",format='pdf')
     plt.show()
 
+final_plot_fp()
 final_plot_ne()
